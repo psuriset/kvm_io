@@ -1,0 +1,4 @@
+probe qemu.kvm.virtio_blk_handle_write
+{
+printf("ts=%d,req=%d,sector=%d,nsectors=%d\n",gettimeofday_us(),req,sector,nsectors);
+}
