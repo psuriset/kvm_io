@@ -17,7 +17,7 @@ dist=$5
 master_image=master.$disk_format
 image_path=/var/lib/libvirt/images
 yum install -y wget
-wget $ks_file $dist-vm.ks
+wget $ks_file
 extra="ks=file:/$disk-vm.ks console=ttyS0,115200"
 if ! rpm -qa | grep -qw virt-install; then
     yum install -y virt-install 

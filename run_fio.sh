@@ -1,5 +1,4 @@
 #!/bin/bash
-rm -rf *
 config=$1
 sample=$2
 testtype=$3
