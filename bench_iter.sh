@@ -78,9 +78,10 @@ else
 fi
 
 BENCH_DIR="`date +"%m-%d-%y-%H-%M-%S"`$bench_ext"
-PID=`pgrep qemu-kvm | tail -n 1`
-CLIENTS='virbr0'
-echo -e ".....\nqemu-process details:\n`ps -aef| grep qemu-kvm`\n....."
+PID=`pgrep 'qemu-kvm|qemu-system-x86' | tail -n 1`
+# TODO: add option to get multiple args as clients (virbr0-xx-xx, virbr0-xx-yy, virbr0-xx-zz, ..)
+CLIENTS=$1
+echo -e ".....\nqemu-process details:\n`ps -aef| egrep 'qemu-kvm|qemu-system-x86_64'`\n....."
 
 # define fio commands
 freshen_up="clear-tools && clear-results && kill-tools && echo 2 > /proc/sys/vm/drop_caches"
