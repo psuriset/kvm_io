@@ -38,7 +38,7 @@ if [[ -z $skim_opt ]]; then
 fi
 
 if [[ -z $WITH_TOOL ]]; then
-    # defaults to Native
+    # defaults to with debug tool enabled
     WITH_TOOL=1
 fi
 
@@ -79,7 +79,7 @@ fi
 
 BENCH_DIR="`date +"%m-%d-%y-%H-%M-%S"`$bench_ext"
 PID=`pgrep qemu-kvm | tail -n 1`
-CLIENTS='virbr0-122-84'
+CLIENTS='virbr0'
 echo -e ".....\nqemu-process details:\n`ps -aef| grep qemu-kvm`\n....."
 
 # define fio commands
