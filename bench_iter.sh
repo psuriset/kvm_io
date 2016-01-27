@@ -50,7 +50,7 @@ if [ $skim_opt -eq 0 ]; then
 	pr_events="-e syscalls:sys_enter_io_submit -e syscalls:sys_exit_io_submit -e syscalls:sys_enter_io_getevents -e syscalls:sys_exit_io_getevents"
 	trace_events="-e io_submit,io_getevents"
 	if [[ -z $targets ]]; then
-	    targets="/dev/vdb,/dev/vdb"
+	    targets=/dev/vdb
 	fi
 
 	if [[ -z $config ]]; then
