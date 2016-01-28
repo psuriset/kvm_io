@@ -1,5 +1,7 @@
 #!/bin/bash
 
+## Usage:
+## ./bench_iter.sh <IP of client to run fio on> <
 user_interrupt(){
     echo -e "\n\nKeyboard Interrupt detected."
     # echo -e "Cleaning up..."
@@ -9,7 +11,7 @@ user_interrupt(){
 trap user_interrupt SIGINT
 trap user_interrupt SIGTSTP
 
-while getopts "h?t:w:c:s:" opt; do
+while getopts "h?t:w:c:s:i:o:" opt; do
     case "$opt" in
 	h|\?)
 	    echo "Usage: # $0 [OPTIONS]"
@@ -18,6 +20,8 @@ while getopts "h?t:w:c:s:" opt; do
 	    echo "[-w with/without debugging tools included 1/0 resp. ]"
 	    echo "[-t targets (/dev/vdb,/dev/vdb, ...) ]"
 	    echo "[-c config name for pbench_fio ]"
+	    echo "[-i IP(s) of client to run benchmark on.. ]"
+	    echo "[-o directory to store results to.. ]"
 	    echo
 	    exit 0
 	    ;;
@@ -28,9 +32,21 @@ while getopts "h?t:w:c:s:" opt; do
 	w)  WITH_TOOL=$OPTARG
 	    ;;
 	c)  config=$OPTARG
+	    ;;
+	i)  CLIENTS=$OPTARG
+	    ;;
+	o)  DIR_SRC=$OPTARG
 	    ;;	    
     esac
 done
+
+if [[ -z $CLIENTS ]]; then
+	CLIENTS=127.0.0.1
+fi
+
+if [[ -z $DIR_SRC ]]; then
+	DIR_SRC="/latency_results"
+fi
 
 if [[ -z $skim_opt ]]; then
     # defaults to Native
@@ -77,11 +93,15 @@ else
 	exit 0
 fi
 
-BENCH_DIR="`date +"%m-%d-%y-%H-%M-%S"`$bench_ext"
+
 PID=`pgrep 'qemu-kvm|qemu-system-x86' | tail -n 1`
 # TODO: add option to get multiple args as clients (virbr0-xx-xx, virbr0-xx-yy, virbr0-xx-zz, ..)
-CLIENTS=$1
 echo -e ".....\nqemu-process details:\n`ps -aef| egrep 'qemu-kvm|qemu-system-x86_64'`\n....."
+
+DIR_TAG="`date +"%m-%d-%y-%H-%M-%S"`$bench_ext"
+BENCH_DIR=${DIR_SRC%/}/$DIR_TAG
+
+ORIG_PATH=$PWD
 
 # define fio commands
 freshen_up="clear-tools && clear-results && kill-tools && echo 2 > /proc/sys/vm/drop_caches"
@@ -99,11 +119,11 @@ debuggers=("$perf_record_cmd" "$perf_trace_record_cmd" "$perf_trace_cmd" "$strac
 
 cleanup(){
 	echo "cleaning up.."
-	rm -rf perf.data output op_tmp results_* nohup.out test &>/dev/null
+	rm -f ${DIR_SRC%/}/{perf.data,output,op_tmp,results_*,nohup.out} &>/dev/null
 }
 
 start_test(){
-	mkdir $BENCH_DIR && cd $BENCH_DIR
+	mkdir -p $BENCH_DIR && cd $BENCH_DIR
 	
 	echo "registering pbench tool set.."
 	register-tool-set &>/dev/null
@@ -111,7 +131,7 @@ start_test(){
 	# N iterations
 	for i in $(seq 1 5)
 	do 
-		mkdir $i && cd $i
+		mkdir -p $i && cd $i
 		echo "**********  RUN $i  ***********"
 		
 		# run fio and save data
@@ -140,13 +160,14 @@ start_test(){
 			tail -n 2 op_tmp > "results_"$i"_$result_name";
 			echo -e "saving results for $result_name\n";
 		done
-		# back up one BENCH_DIR for new iteration
+		# back up one dir for new iteration (1/ 2/ 3/ 4/ ..)
 		cd ..
 	done
 }
 
 generate_stats(){
 	echo
+	cd $BENCH_DIR
 	# calculate stats
 	for current in "${debuggers[@]}"
 	do
@@ -158,7 +179,7 @@ generate_stats(){
 		# echo "Mean: $(awk '{a+=$1} END{print a/NR}' tmp)";
 		echo "Min: $(sort -n tmp | head -n1)" >> "$result_name.txt";
 		echo "Max: $(sort -n tmp | tail -n1)" >> "$result_name.txt";
-		../avg-stddev $(cat tmp) >> "$result_name.txt";
+		/usr/local/bin/avg-stddev $(cat tmp) >> "$result_name.txt";
 		echo;
 	done
 	# remove trash
