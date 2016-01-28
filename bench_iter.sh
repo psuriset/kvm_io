@@ -137,7 +137,7 @@ start_test(){
 			fi
 
 			result_name=$(echo $current | awk -F '-e' '{print $1}' | sed 's/ /_/g');
-			tail -n 2 op_tmp > "results_$i_$result_name";
+			tail -n 2 op_tmp > "results_"$i"_$result_name";
 			echo -e "saving results for $result_name\n";
 		done
 		# back up one BENCH_DIR for new iteration
@@ -150,6 +150,7 @@ generate_stats(){
 	# calculate stats
 	for current in "${debuggers[@]}"
 	do
+		# echo $PWD
 		result_name=$(echo $current | awk -F '-e' '{print $1}' | sed 's/ /_/g');
 		echo "Saving stats for $result_name..";
 		cat */results_*_$result_name | grep -v 'iteration' | awk -F' ' '{print $2}' | awk -F'[' '{print $1}' > tmp;
