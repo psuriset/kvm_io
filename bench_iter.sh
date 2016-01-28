@@ -69,7 +69,7 @@ elif [ $skim_opt -eq 1 ]; then
 	fi
 
 	if [[ -z $config ]]; then
-	    config="fio_run_native"
+	    config="fio_run_threads"
 	fi
 
 else
