@@ -11,7 +11,7 @@ user_interrupt(){
 trap user_interrupt SIGINT
 trap user_interrupt SIGTSTP
 
-while getopts "h?t:w:c:s:i:o:" opt; do
+while getopts "h?t:w:c:s:i:o:b:" opt; do
     case "$opt" in
 	h|\?)
 	    echo "Usage: # $0 [OPTIONS]"
@@ -21,7 +21,8 @@ while getopts "h?t:w:c:s:i:o:" opt; do
 	    echo "[-t targets (/dev/vdb,/dev/vdb, ...) ]"
 	    echo "[-c config name for pbench_fio ]"
 	    echo "[-i IP(s) of client to run benchmark on.. ]"
-	    echo "[-o directory to store results to.. ]"
+	    echo "[-o results_directory: to store benchmark results to.. ]"
+	    echo "[-b bench_directory ..if supplied, overrides -o (/<results_dir>/<bench_dir(s)>).. ]"
 	    echo
 	    exit 0
 	    ;;
@@ -36,6 +37,8 @@ while getopts "h?t:w:c:s:i:o:" opt; do
 	i)  CLIENTS=$OPTARG
 	    ;;
 	o)  DIR_SRC=$OPTARG
+	    ;;	    
+	b)  BENCH_DIR=$OPTARG
 	    ;;	    
     esac
 done
@@ -93,13 +96,15 @@ else
 	exit 0
 fi
 
+if [[ -z $BENCH_DIR ]]; then
+	DIR_TAG="`date +"%m-%d-%y-%H-%M-%S"`$bench_ext"
+	BENCH_DIR=${DIR_SRC%/}/$DIR_TAG
+fi
+
 
 PID=`pgrep 'qemu-kvm|qemu-system-x86' | tail -n 1`
 # TODO: add option to get multiple args as clients (virbr0-xx-xx, virbr0-xx-yy, virbr0-xx-zz, ..)
 echo -e ".....\nqemu-process details:\n`ps -aef| egrep 'qemu-kvm|qemu-system-x86_64'`\n....."
-
-DIR_TAG="`date +"%m-%d-%y-%H-%M-%S"`$bench_ext"
-BENCH_DIR=${DIR_SRC%/}/$DIR_TAG
 
 ORIG_PATH=$PWD
 
@@ -124,7 +129,7 @@ cleanup(){
 
 start_test(){
 	mkdir -p $BENCH_DIR && cd $BENCH_DIR
-	
+	echo "Saving results to $BENCH_DIR.."
 	echo "registering pbench tool set.."
 	register-tool-set &>/dev/null
 
