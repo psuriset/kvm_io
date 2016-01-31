@@ -73,7 +73,7 @@ if [ $skim_opt -eq 0 ]; then
 	fi
 
 	if [[ -z $config ]]; then
-	    config="fio_run_native"
+	    config="analyzer_iodepth:32_type:native_io:aio_run:"
 	fi
 
 elif [ $skim_opt -eq 1 ]; then
@@ -88,7 +88,7 @@ elif [ $skim_opt -eq 1 ]; then
 	fi
 
 	if [[ -z $config ]]; then
-	    config="fio_run_threads"
+	    config="analyzer_iodepth:32_type:threads_io:aio_run:"
 	fi
 
 else
@@ -110,7 +110,6 @@ ORIG_PATH=$PWD
 
 # define fio commands
 freshen_up="clear-tools && clear-results && kill-tools && echo 2 > /proc/sys/vm/drop_caches"
-fio_cmd="pbench_fio --clients=$CLIENTS --test-types=write  --block-sizes=4 --targets=$targets  --samples=1  --config=$config"
 
 # track io_submit and sys_enter_io_getevents
 perf_record_cmd="perf record $pr_events -g --pid=$PID -o perf_record.data"
@@ -153,7 +152,10 @@ start_test(){
 				sleep 5;
 			fi
 
+			result_name=$(echo $current | awk -F '-e' '{print $1}' | sed 's/ /_/g');
+
 			echo "running benchmark now..";
+			fio_cmd="pbench_fio --clients=$CLIENTS --test-types=write  --block-sizes=4 --targets=$targets  --samples=1  --config=$config$i-debugger:$result_name"
 			$fio_cmd > op_tmp;
 			echo "finished benchmark";
 			
@@ -163,7 +165,6 @@ start_test(){
 				pkill perf;
 			fi
 
-			result_name=$(echo $current | awk -F '-e' '{print $1}' | sed 's/ /_/g');
 			tail -n 2 op_tmp > "results_"$i"_$result_name";
 			echo -e "saving results for $result_name\n";
 		done
