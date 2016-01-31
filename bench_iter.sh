@@ -11,7 +11,7 @@ user_interrupt(){
 trap user_interrupt SIGINT
 trap user_interrupt SIGTSTP
 
-while getopts "h?t:w:c:s:i:o:b:" opt; do
+while getopts "h?t:w:c:s:i:o:b:r:" opt; do
     case "$opt" in
 	h|\?)
 	    echo "Usage: # $0 [OPTIONS]"
@@ -23,6 +23,7 @@ while getopts "h?t:w:c:s:i:o:b:" opt; do
 	    echo "[-i IP(s) of client to run benchmark on.. ]"
 	    echo "[-o results_directory: to store benchmark results to.. ]"
 	    echo "[-b bench_directory ..if supplied, overrides -o (/<results_dir>/<bench_dir(s)>).. ]"
+	    echo "[-r # of iterations to run, to calculate std-dev.. (N iterations per each debugger; default: 5)"
 	    echo
 	    exit 0
 	    ;;
@@ -40,8 +41,14 @@ while getopts "h?t:w:c:s:i:o:b:" opt; do
 	    ;;	    
 	b)  BENCH_DIR=$OPTARG
 	    ;;	    
+	r)  ITER=$OPTARG
+	    ;;	    
     esac
 done
+
+if [[ -z $ITER ]]; then
+	ITER=5
+fi
 
 if [[ -z $CLIENTS ]]; then
 	CLIENTS=127.0.0.1
@@ -135,7 +142,7 @@ start_test(){
 	register-tool-set &>/dev/null
 
 	# N iterations
-	for i in $(seq 1 5)
+	for i in $(seq 1 $ITER)
 	do 
 		mkdir -p $i && cd $i
 		echo "**********  RUN $i  ***********"
@@ -155,7 +162,8 @@ start_test(){
 			result_name=$(echo $current | awk -F '-e' '{print $1}' | sed 's/ /_/g');
 
 			echo "running benchmark now..";
-			fio_cmd="pbench_fio --clients=$CLIENTS --test-types=write  --block-sizes=4 --targets=$targets  --samples=1  --config=$config$i-debugger:$result_name"
+			test_type=write
+			fio_cmd="pbench_fio --clients=$CLIENTS --test-types=$test_type  --block-sizes=4 --targets=$targets  --samples=1  --config=$config$i-IOPS:$test_type-debugger:$result_name"
 			$fio_cmd > op_tmp;
 			echo "finished benchmark";
 			
