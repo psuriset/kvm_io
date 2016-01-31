@@ -115,7 +115,7 @@ fio_cmd="pbench_fio --clients=$CLIENTS --test-types=write  --block-sizes=4 --tar
 # track io_submit and sys_enter_io_getevents
 perf_record_cmd="perf record $pr_events -g --pid=$PID -o perf_record.data"
 #perf_trace_record_cmd="perf trace record $pr_events -g --pid=$PID -o perf_trace_record.data"
-perf_kvm_record_cmd="perf kvm record $pr_events -g --pid=$PID -o perf_trace_record.data"
+perf_kvm_record_cmd="perf kvm record $pr_events -g --pid=$PID -o perf_kvm_record.data"
 strace_cmd="strace $trace_events -o output_strace -p $PID"
 perf_trace_cmd="perf trace $trace_events -o output_perf_trace --pid=$PID"
 
