@@ -66,8 +66,8 @@ if [ $skim_opt -eq 0 ]; then
 	echo "Running for type: native"
 	sleep 1
 	bench_ext="_native"
-	pr_events="-e syscalls:sys_enter_io_submit -e syscalls:sys_exit_io_submit -e syscalls:sys_enter_io_getevents -e syscalls:sys_exit_io_getevents"
-	trace_events="-e io_submit,io_getevents"
+	pr_events="-e syscalls:sys_enter_io_submit -e syscalls:sys_exit_io_submit -e syscalls:sys_enter_io_getevents -e syscalls:sys_exit_io_getevents -e kvm:kvm_exit -e kvm:kvm_entry -e kvm:kvm_inj_virq -e syscalls:sys_exit_ppoll -e syscalls:sys_enter_ppoll"
+	trace_events="-e io_submit,io_getevents,ppoll"
 	if [[ -z $targets ]]; then
 	    targets=/dev/vdb
 	fi
@@ -114,13 +114,15 @@ fio_cmd="pbench_fio --clients=$CLIENTS --test-types=write  --block-sizes=4 --tar
 
 # track io_submit and sys_enter_io_getevents
 perf_record_cmd="perf record $pr_events -g --pid=$PID -o perf_record.data"
-perf_trace_record_cmd="perf trace record $pr_events -g --pid=$PID -o perf_trace_record.data"
+#perf_trace_record_cmd="perf trace record $pr_events -g --pid=$PID -o perf_trace_record.data"
+perf_kvm_record_cmd="perf kvm record $pr_events -g --pid=$PID -o perf_trace_record.data"
 strace_cmd="strace $trace_events -o output_strace -p $PID"
 perf_trace_cmd="perf trace $trace_events -o output_perf_trace --pid=$PID"
 
 declare -a debuggers
 
-debuggers=("$perf_record_cmd" "$perf_trace_record_cmd" "$perf_trace_cmd" "$strace_cmd");
+debuggers=("$perf_record_cmd" "$perf_kvm_record_cmd" "$perf_trace_cmd" "$strace_cmd"); 
+# EXTRA: $perf_trace_record_cmd --> doesn't trace kvm events. 
 
 cleanup(){
 	echo "cleaning up.."
