@@ -116,7 +116,7 @@ echo -e ".....\nqemu-process details:\n`ps -aef| egrep 'qemu-kvm|qemu-system-x86
 ORIG_PATH=$PWD
 
 # define fio commands
-freshen_up="clear-tools && clear-results && kill-tools && echo 2 > /proc/sys/vm/drop_caches"
+freshen_up="clear-results && clear-tools && kill-tools && echo 2 > /proc/sys/vm/drop_caches"
 
 # track io_submit and sys_enter_io_getevents
 perf_record_cmd="perf record $pr_events -g --pid=$PID -o perf_record.data"
@@ -127,7 +127,8 @@ perf_trace_cmd="perf trace $trace_events -o output_perf_trace --pid=$PID"
 
 declare -a debuggers
 
-debuggers=("$perf_record_cmd" "$perf_kvm_record_cmd" "$perf_trace_cmd" "$strace_cmd"); 
+debuggers=("$perf_kvm_record_cmd"); 
+# debuggers=("$perf_record_cmd" "$perf_kvm_record_cmd" "$perf_trace_cmd" "$strace_cmd"); 
 # EXTRA: $perf_trace_record_cmd --> doesn't trace kvm events. 
 
 cleanup(){
@@ -139,7 +140,8 @@ start_test(){
 	mkdir -p $BENCH_DIR && cd $BENCH_DIR
 	echo "Saving results to $BENCH_DIR.."
 	echo "registering pbench tool set.."
-	register-tool-set &>/dev/null
+
+	$freshen_up &>/dev/null
 
 	# N iterations
 	for i in $(seq 1 $ITER)
@@ -151,7 +153,7 @@ start_test(){
 		for current in "${debuggers[@]}"
 		do
 			echo "freshning up; clearing environment";
-			$freshen_up &>/dev/null
+			register-tool-set &>/dev/null
 
 			if [ $WITH_TOOL -eq 1 ]; then
 				echo "Running debugger: $current"
@@ -164,7 +166,14 @@ start_test(){
 			echo "running benchmark now..";
 			test_type=write
 			fio_cmd="pbench_fio --clients=$CLIENTS --test-types=$test_type  --block-sizes=4 --targets=$targets  --samples=1  --config=$config$i-IOPS:$test_type-debugger:$result_name"
+			
 			$fio_cmd > op_tmp;
+			
+			kill-tools
+			# move-results
+			# clear-results
+			clear-tools
+			
 			echo "finished benchmark";
 			
 			if [ $WITH_TOOL -eq 1 ]; then
